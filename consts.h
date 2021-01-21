@@ -4,20 +4,31 @@
 #include "QString"
 #include <map>
 
-std::map <unsigned short, QString> module_types {
-    { 1, "SS-01" },     //0x0010 -IN- -OUT-
-    { 2, "USB/RS-485"}, //0x0020 DIN1 -OUT-
-    { 3, "ID-8k" },     //0x4002 DIN1 -OUT-
-    { 4, "ID-16k"},     //0x6002 DIN2 -OUT-
-    { 5, "OD-5k" },     //0x1502 -IN- DOUT1
-    { 6, "OD-16k"},     //0x1600 DIN4 DOUT1
-    { 7, "OA-4k" },     //0x3002 AIN4 AOUT4
-    { 8, "IA-4k" },     //0x2002 AIN4 DOUT1*
-    { 9, "IA-8k" },     //0x2800 AIN8 -OUT-
-    {10, "IF-1k" },     //0x1900 AIN1 DOUT1*
-    {11, "IF-3k" },     //0x1903 AIN3 DOUT1*
-    {12, "D-1k"  },     //0x1A00 AIN4 AOUT2
-    {13, "БУ ВНА"}      //0x1A10 AIN4 AOUT1
+typedef struct{
+    QString type;
+    int     hextype;
+    QString iotype;
+    int     iCount;
+    int     oCount;
+}module;
+module createModule(QString t,int ht, QString iot, int ic, int oc){
+    module M = {t,ht,iot,ic,oc};
+    return M;
+}
+std::map <unsigned short, module> modules {
+    { 1, createModule("SS-01"     , 0x0010, "none", 0, 0)},
+    { 2, createModule("USB/RS-485", 0x0020, "D"   , 1, 0)},
+    { 3, createModule("ID-8k"     , 0x4002, "D"   , 1, 0)},
+    { 4, createModule("ID-16k"    , 0x6002, "D"   , 2, 0)},
+    { 5, createModule("OD-5k"     , 0x1502, "D"   , 0, 1)},
+    { 6, createModule("OD-16k"    , 0x1600, "D"   , 4, 1)},
+    { 7, createModule("OA-4k"     , 0x3002, "A"   , 4, 4)},
+    { 8, createModule("IA-4k"     , 0x2002, "A"   , 4, 1)},
+    { 9, createModule("IA-8k"     , 0x2800, "A"   , 8, 0)},
+    {10, createModule("IF-1k"     , 0x1900, "A"   , 1, 1)},
+    {11, createModule("IF-3k"     , 0x1903, "A"   , 3, 1)},
+    {12, createModule("D-1k"      , 0x1A00, "A"   , 4, 2)},
+    {13, createModule("БУ ВНА"    , 0x1A10, "A"   , 4, 1)},
 };
 
 std::map <unsigned char, QString> module_states {
@@ -37,6 +48,10 @@ std::map <unsigned char, QString> module_states {
     {13, "ERRM_13_INIT"    },
     {14, "ERRM_14_PORTFAIL"},
     {15, "ERRM_15_LAN"     },
+    {16, "ERRM_20_OK"      },
+    {17, "ERRM_20_OK"      },
+    {18, "ERRM_20_OK"      },
+    {19, "ERRM_20_OK"      },
     {20, "ERRM_20_OK"      }
 };
 

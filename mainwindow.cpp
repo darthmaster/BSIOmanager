@@ -1,12 +1,13 @@
 //{
 #include <fstream>
-#include <iostream>
+//#include <iostream>
 #include <thread>
-#include <cstdlib>
+//#include <cstdlib>
 
-#include "QMessageBox"
-#include "QInputDialog"
-#include "QSettings"
+#include <QMessageBox>
+#include <QInputDialog>
+#include <QSettings>
+#include <QRandomGenerator>
 
 #include "mainwindow.h"
 #include "ui_mainwindow.h"
@@ -26,8 +27,8 @@ MainWindow::MainWindow(QWidget *parent): QMainWindow(parent), ui(new Ui::MainWin
     bool darktheme = settings->value("theme/darkmode",false).toBool();
     ui->dark_theme->setChecked(darktheme);
     QApplication::setPalette(QPalette(darktheme?
-                                          Qt::GlobalColor::darkGray:
-                                          Qt::GlobalColor::lightGray));
+                                          QColor(38,39,40):
+                                          QColor(220,220,220)));
 }
 MainWindow::~MainWindow()
 {
@@ -37,9 +38,9 @@ MainWindow::~MainWindow()
 void MainWindow::on_dark_theme_toggled(bool arg1)
 {
     if (arg1)
-        QApplication::setPalette(QPalette(Qt::GlobalColor::darkGray));
+        QApplication::setPalette(QPalette(QColor(38,39,40)));
     else
-        QApplication::setPalette(QPalette(Qt::GlobalColor::lightGray));
+        QApplication::setPalette(QPalette(QColor(220,220,220)));
     settings->setValue("theme/darkmode",arg1);
     settings->sync();
 }
@@ -74,7 +75,7 @@ QVariant ModulesTableModel::data(const QModelIndex &index, int role) const
                     case 0:
                         return QString::number(index.row());
                     case 1:
-                        return module_types[shared->region->BS_input[index.row()].device.type];
+                        return modules[shared->region->BS_input[index.row()].device.type].type;
                     case 2:
                         return module_states[shared->region->BS_input[index.row()].device.state];
                     case 3:
@@ -122,7 +123,6 @@ void MainWindow::on_updateListButton_clicked()
                 "Найдено БС: "+
                 QString::number(bs_list.length()));
 }
-
 void MainWindow::on_bsList_activated(int index)
 {
     std::string bs_name = "/bs"+std::to_string(index+1);
@@ -134,15 +134,16 @@ void MainWindow::on_bsList_activated(int index)
 
 void imitation()
 {
-    std::srand(std::time(nullptr));
+    //std::srand(std::time(nullptr));
+    QRandomGenerator *rg = QRandomGenerator::global();
     SharedMem shm("/bs1");
     int i;
     while (isImitation){
         for (i=0; i<=15; i++){
-            shm.region->BS_input[i].device.color = 50 + (rand() % static_cast<int>(120 - 50 + 1));;
-            shm.region->BS_input[i].device.func  = 20 + (rand() % static_cast<int>(70 - 20 + 1));
-            shm.region->BS_input[i].device.state = 0  + (rand() % static_cast<int>(20));
-            shm.region->BS_input[i].device.type  = 1  + (rand() % static_cast<int>(13 - 1 + 1));
+            //shm.region->BS_input[i].device.color = 50 + (rand() % static_cast<int>(120 - 50 + 1));;
+            //shm.region->BS_input[i].device.func  = 20 + (rand() % static_cast<int>(70 - 20 + 1));
+            shm.region->BS_input[i].device.state = rg->bounded(0,20);
+            shm.region->BS_input[i].device.type  = rg->bounded(1,13);
             shm.region->BS_input[i].trace.count += 1;
         }
         sleep(1);
@@ -165,67 +166,10 @@ void MainWindow::on_imitationBox_stateChanged(int imitation_checked)
 
 void MainWindow::on_modulesView_activated(const QModelIndex &index)
 {
-    auto module = shared->region -> BS_input[index.row()];
-    ui->name_value->setText(module_types[module.device.type]);
+    auto modInData  = &shared->region->BS_input [index.row()];
+    auto modOutData = &shared->region->BS_output[index.row()];
+    module modInfo  = modules[modInData->device.type];
+    ui->name_value->setText(modInfo.type);
+    ui->type_value->setText(modInfo.iotype);
 
-    switch (module.device.type){
-        /*default:
-            ui->opc_value->setText(opc_state[module.DI.sign.opc]);          //quality
-            ui->valid_value->setText(valid_state[module.DI.sign.valid]);    //valid
-            for (int i=0; i< 4; i++)
-            {
-                ui->in_list->setItem(i, 0, new QTableWidgetItem(QString::number(module.DI.data[i])));
-            }*/
-        case 1://SS-01t
-            ui->opc_value->setText(opc_state[module.DI.sign.opc]);
-            ui->valid_value->setText(valid_state[module.DI.sign.valid]);
-
-        case 2://USB/RS-485
-            ui->opc_value->setText(opc_state[module.DI.sign.opc]);
-            ui->valid_value->setText(valid_state[module.DI.sign.valid]);
-
-        case 3://ID-8k
-            ui->opc_value->setText(opc_state[module.DI.sign.opc]);
-            ui->valid_value->setText(valid_state[module.DI.sign.valid]);
-
-        case 4://ID-16k
-            ui->opc_value->setText(opc_state[module.DI.sign.opc]);
-            ui->valid_value->setText(valid_state[module.DI.sign.valid]);
-
-        case 5://OD-5k
-            ui->opc_value->setText(opc_state[module.DI.sign.opc]);
-            ui->valid_value->setText(valid_state[module.DI.sign.valid]);
-
-        case 6://OD-16k
-            ui->opc_value->setText(opc_state[module.DI.sign.opc]);
-            ui->valid_value->setText(valid_state[module.DI.sign.valid]);
-
-        case 7://OA-4k
-            ui->opc_value->setText(opc_state[module.DI.sign.opc]);
-            ui->valid_value->setText(valid_state[module.DI.sign.valid]);
-
-        case 8://IA-4k
-            ui->opc_value->setText(opc_state[module.DI.sign.opc]);
-            ui->valid_value->setText(valid_state[module.DI.sign.valid]);
-
-        case 9://IA-8k
-            ui->opc_value->setText(opc_state[module.DI.sign.opc]);
-            ui->valid_value->setText(valid_state[module.DI.sign.valid]);
-
-        case 10://IF-1k
-            ui->opc_value->setText(opc_state[module.DI.sign.opc]);
-            ui->valid_value->setText(valid_state[module.DI.sign.valid]);
-
-        case 11://IF-3k
-            ui->opc_value->setText(opc_state[module.DI.sign.opc]);
-            ui->valid_value->setText(valid_state[module.DI.sign.valid]);
-
-        case 12://D-1k
-            ui->opc_value->setText(opc_state[module.DI.sign.opc]);
-            ui->valid_value->setText(valid_state[module.DI.sign.valid]);
-
-        case 13://БУ ВНА
-            ui->opc_value->setText(opc_state[module.DI.sign.opc]);
-            ui->valid_value->setText(valid_state[module.DI.sign.valid]);
-    }
 }

@@ -19,6 +19,9 @@
   <property name="windowTitle">
    <string notr="true">BSIO Manager</string>
   </property>
+  <property name="windowIcon">
+   <iconset theme="drawio"/>
+  </property>
   <widget class="QWidget" name="centralwidget">
    <layout class="QGridLayout" name="gridLayout">
     <item row="1" column="0" colspan="2">
