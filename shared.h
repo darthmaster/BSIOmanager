@@ -67,7 +67,7 @@ typedef struct {
 typedef struct {
 
     quality_t      sign;
-	unsigned short data;
+    unsigned short data[8];
 //	unsigned char  dummy[2];
 } discrete_out_t;
 

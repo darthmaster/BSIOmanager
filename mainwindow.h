@@ -36,13 +36,16 @@ public:
     MainWindow(QWidget *parent = nullptr);
     ~MainWindow();
 
+    template<typename Tin,typename Tout, typename Tmod>
+    void fill_IO(Tin, Tout, Tmod);
+
 private slots:
 
     void on_updateListButton_clicked();
 
     void on_create_shm_triggered();
 
-    void on_actionAbout_Qt_triggered()
+    void on_aboutQt_triggered()
     {
         QMessageBox::aboutQt(this, "About Qt");
     }
