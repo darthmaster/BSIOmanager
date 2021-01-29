@@ -5,6 +5,7 @@
 #include <QMainWindow>
 #include <QAbstractTableModel>
 #include <QMessageBox>
+#include <QTableWidgetItem>
 
 QT_BEGIN_NAMESPACE
 namespace Ui { class MainWindow; }
@@ -36,8 +37,8 @@ public:
     MainWindow(QWidget *parent = nullptr);
     ~MainWindow();
 
-    template<typename Tin,typename Tout, typename Tmod>
-    void fill_IO(Tin, Tout, Tmod);
+    template<typename Tin,typename Tout>
+    void fill_IO(Tin, Tout);
 
 private slots:
 
@@ -64,6 +65,12 @@ private slots:
     }
 
     void on_imitationBox_stateChanged(int arg1);
+
+    void on_out_list_itemChanged(QTableWidgetItem *item);
+
+    void on_debInfView_toggled(bool arg1);
+
+    void debugInfoUpdate();
 
 private:
     Ui::MainWindow *ui;
