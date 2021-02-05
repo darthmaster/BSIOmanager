@@ -2,6 +2,7 @@
 #include <fstream>
 #include <thread>
 #include <unistd.h>
+#include <typeinfo>
 
 #include <QMessageBox>
 #include <QInputDialog>
@@ -21,6 +22,7 @@ QSettings *settings    = new QSettings("bsio.conf", QSettings::NativeFormat);
 bool       isImitation = false;
 int        currMod     = 0;
 module    *activeModInfo;
+int counter = 0;
 
 //-------------------Всё что касается окна в целом и то, что можно уже не трогать--------------------//
 MainWindow::MainWindow(QWidget *parent): QMainWindow(parent), ui(new Ui::MainWindow)
@@ -51,11 +53,16 @@ void MainWindow::on_dark_theme_toggled(bool darkThemeChecked)
 }
 void MainWindow::debugInfoUpdate()
 {
+    if (isImitation)
+        ui->debugInfo->setPalette(QColor(255,255,0));
+    else
+        ui->debugInfo->setPalette(QColor(255,0,255));
+
     ui->l1->setText(QString("Active m_pos: %1").arg(QString::number(currMod)));
-    ui->l2->setText(QString("iCount: %1").arg(activeModInfo->iCount));
-    ui->l3->setText(QString("oCount: %1").arg(activeModInfo->oCount));
-    ui->l4->setText(QString("index.row(): %1").arg(QString::number(ui->modulesView->currentIndex().row())));
-    ui->l5->setText(QString());
+    ui->l2->setText(QString("index.row(): %1").arg(QString::number(ui->modulesView->currentIndex().row())));
+    ui->l3->setText(QString(""));
+    ui->l4->setText(QString(""));
+    ui->l5->setText(QString("UI updates: %1").arg(counter));
 }
 void MainWindow::on_debInfView_toggled(bool isActive)
 {
@@ -70,6 +77,15 @@ void MainWindow::on_debInfView_toggled(bool isActive)
 void MainWindow::on_bsList_currentIndexChanged(const QString &currentValue)
 {
     ui->statusbar->showMessage("Выбран "+currentValue);
+}
+
+void MainWindow::on_updateUI_triggered()
+{
+    debugInfoUpdate();
+    ui->modulesView->reset();
+    ui->modulesView->resizeColumnsToContents();
+    if (ui->modulesView->currentIndex().row()==-1)
+        ui->modulesView->selectRow(currMod);
 }
 
 //-------------------Модели таблиц и всё что с ними связано------------------------------------------//
@@ -152,6 +168,7 @@ void MainWindow::on_bsList_activated(int index)
     shared = new SharedMem(bs_name.c_str());
     ModulesTableModel *md = new ModulesTableModel(this);
     ui->modulesView->setModel(md);
+    ui->modulesView->reset();
     ui->modulesView->resizeColumnsToContents();
 }
 
@@ -169,21 +186,22 @@ void imitation()
             shm.region->BS_input[i].AI.data[1]   = rg->bounded(0,100);
             shm.region->BS_input[i].AI.data[2]   = rg->bounded(0,100);
             shm.region->BS_input[i].AI.data[3]   = rg->bounded(0,100);
-            shm.region->BS_input[i].DI.data[0]   = rg->bounded(0,100);
-            shm.region->BS_input[i].DI.data[1]   = rg->bounded(0,100);
-            shm.region->BS_input[i].DI.data[2]   = rg->bounded(0,100);
-            shm.region->BS_input[i].DI.data[3]   = rg->bounded(0,100);
+            shm.region->BS_input[i].DI.data[0]   = rg->bounded(0,2);
+            shm.region->BS_input[i].DI.data[1]   = rg->bounded(0,2);
+            shm.region->BS_input[i].DI.data[2]   = rg->bounded(0,2);
+            shm.region->BS_input[i].DI.data[3]   = rg->bounded(0,2);
             shm.region->BS_input[i].AO.data[0]   = rg->bounded(0,100);
             shm.region->BS_input[i].AO.data[1]   = rg->bounded(0,100);
             shm.region->BS_input[i].AO.data[2]   = rg->bounded(0,100);
             shm.region->BS_input[i].AO.data[3]   = rg->bounded(0,100);
-            shm.region->BS_input[i].DO.data[0]   = rg->bounded(0,100);
-            shm.region->BS_input[i].DO.data[1]   = rg->bounded(0,100);
-            shm.region->BS_input[i].DO.data[2]   = rg->bounded(0,100);
-            shm.region->BS_input[i].DO.data[3]   = rg->bounded(0,100);
+            shm.region->BS_input[i].DO.data[0]   = rg->bounded(0,2);
+            shm.region->BS_input[i].DO.data[1]   = rg->bounded(0,2);
+            shm.region->BS_input[i].DO.data[2]   = rg->bounded(0,2);
+            shm.region->BS_input[i].DO.data[3]   = rg->bounded(0,2);
         }
-        sleep(2);
+        sleep(1);
     }
+    shm.~SharedMem();
 }
 void MainWindow::on_imitationBox_stateChanged(int imitation_checked)
 {
@@ -198,18 +216,37 @@ void MainWindow::on_imitationBox_stateChanged(int imitation_checked)
             ui->statusbar->showMessage("Имитация остановлена");
         }
     }
+    while(isImitation){
+        counter++;
+        ui->updateUI->triggered();
+        QApplication::processEvents();
+        //sleep(1);
+    }
 }
 template<typename Tin,typename Tout>
-void MainWindow::fill_IO(Tin in, Tout out)
+void MainWindow::fill_IO(Tin in, Tout out, bool isD)
 {
     ui->valid_value->setText(valid_state[in.sign.valid]);
     ui->  opc_value->setText(  opc_state[in.sign.opc]);
 
-    for (int i=0;i<activeModInfo->iCount;i++) {
-        ui-> in_list->setItem(i,0,new QTableWidgetItem(QString::number( in.data[i])));
-    }
-    for (int i=0;i<activeModInfo->oCount;i++) {
-        ui->out_list->setItem(i,0,new QTableWidgetItem(QString::number(out.data[i])));
+    int  _count = activeModInfo->iCount;
+    auto* _list = ui->in_list;
+    auto  _data = in.data;
+
+    for (int c=0;c<2;c++){
+        for (int i=0;i<_count;i++) {
+            _list->setItem(i,0,new QTableWidgetItem(QString::number(_data[i])));
+            _list->item(i,0)->setTextAlignment(Qt::AlignCenter);
+            if (isD){
+                _list->item(i,0)->setTextColor(Qt::black);
+                (bool)_data[i]?
+                            _list->item(i,0)->setBackgroundColor(Qt::green):
+                            _list->item(i,0)->setBackgroundColor(Qt::darkGreen);
+            }
+        }
+        _count = activeModInfo->oCount;
+        _list  = ui->out_list;
+        _data  = out.data;
     }
 }
 void MainWindow::on_modulesView_activated(const QModelIndex &index)
@@ -225,31 +262,36 @@ void MainWindow::on_modulesView_activated(const QModelIndex &index)
     ui->  in_list ->setRowCount(activeModInfo->iCount);
 
     if (activeModInfo->iotype == "A")
-        MainWindow::fill_IO(modInData->AI, modOutData->AO);
+        MainWindow::fill_IO(modInData->AI, modOutData->AO, false);
     else if (activeModInfo->iotype == "D")
-        MainWindow::fill_IO(modInData->DI, modOutData->DO);
+        MainWindow::fill_IO(modInData->DI, modOutData->DO, true);
 
-    debugInfoUpdate();
+    ui->updateUI->triggered();
 }
 
 void MainWindow::on_out_list_itemChanged(QTableWidgetItem *item)
 {
-    if (item->isSelected()){
+    if (item-> isSelected()){
+        auto val = item->text().toShort();
+        auto channel  = item->row();
         item->setSelected(false);
 
-        auto val = item->text().toShort();
+
         if (activeModInfo->iotype == "A")
-            shared->region->BS_output[currMod].AO_MAN.data[item->row()] = val;
+            shared->region->BS_output[currMod].AO_MAN.data[channel] = val;
         else if (activeModInfo->iotype == "D")
-            shared->region->BS_output[currMod].DO_MAN.data[item->row()] = val;
+            shared->region->BS_output[currMod].DO_MAN.data[channel] = val;
+
+        ui->modulesView->selectRow(currMod);
+        auto ind = ui->modulesView->currentIndex();
+        ui->modulesView->activated(ind);
 
         QString msg = QString("Entered value '%1' to %2 channel in %3 module.")
                 .arg(val)
-                .arg(item->row()+1)
+                .arg(channel+1)
                 .arg(activeModInfo->type);
         ui->statusbar->showMessage(msg);
-
-        QModelIndex ind = ui->modulesView->currentIndex();
-        on_modulesView_activated(ind);
     }
 }
+
+

@@ -38,7 +38,7 @@ public:
     ~MainWindow();
 
     template<typename Tin,typename Tout>
-    void fill_IO(Tin, Tout);
+    void fill_IO(Tin, Tout, bool);
 
 private slots:
 
@@ -71,6 +71,8 @@ private slots:
     void on_debInfView_toggled(bool arg1);
 
     void debugInfoUpdate();
+
+    void on_updateUI_triggered();
 
 private:
     Ui::MainWindow *ui;

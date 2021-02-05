@@ -5,11 +5,11 @@
 #include <map>
 
 typedef struct{
-    QString type;
-    int     hextype;
-    QString iotype;
-    int     iCount;
-    int     oCount;
+    QString type{};
+    int     hextype{};
+    QString iotype{};
+    int     iCount{};
+    int     oCount{};
 }module;
 module createModule(QString t,int ht, QString iot, int ic, int oc){
     module M = {t,ht,iot,ic,oc};
